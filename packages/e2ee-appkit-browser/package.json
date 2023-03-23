@@ -1,0 +1,9 @@
+{
+  "name": "@cyphercider/e2ee-appkit-browser",
+  "version": "0.2.2",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
