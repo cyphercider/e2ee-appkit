@@ -1,4 +1,4 @@
-import { ChallengeResponseInterface } from '@cyphercider/e2ee-appkit-shared-models'
+import { ServerChallengeResponse } from '@cyphercider/e2ee-appkit-shared-models'
 import axios from 'axios'
 import { ulid } from 'ulid'
 import { ConfigService } from './config.service'
@@ -59,8 +59,7 @@ describe('test user authn service', () => {
 
     await userAuthnService.signupUser(user, pass, { defaultCollectionId: ulid() })
 
-    const res = await userAuthnService.login(user, pass)
-    expect(res.token).toBeDefined()
+    await userAuthnService.login(user, pass)
 
     expect(userAuthnService.isLoggedIn).toBeTruthy()
 
@@ -148,7 +147,7 @@ describe('test user authn service', () => {
 const testUserJwt =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c' // sub: 1234567890
 
-const testChallengeResponse: ChallengeResponseInterface = {
+const testChallengeResponse: ServerChallengeResponse = {
   challengeText: 'CHALLENGETEXT-1677856484758',
   publicSigningKey:
     '-----BEGIN PUBLIC KEY-----\n' +

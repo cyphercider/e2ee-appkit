@@ -1,7 +1,7 @@
 import {
   KeypairAlgorithm,
   LoginRequestInterface,
-  ChallengeResponseInterface,
+  ServerChallengeResponse,
   SignupInterface,
   SubmitChallengeInterface,
   TokenPayload,
@@ -69,10 +69,7 @@ export class UserAuthenticationService {
   /**
    * Login to the server with username and password
    */
-  public async login(
-    username: string,
-    password: string,
-  ): Promise<{ challengeResponse: ChallengeResponseInterface; token: string }> {
+  public async login(username: string, password: string): Promise<ServerChallengeResponse> {
     const challengeResponse = await this.getChallengeFromServer(username)
 
     this.cryptoService.setPublicEncryptionKey(challengeResponse.publicEncryptionKey)
@@ -133,7 +130,7 @@ export class UserAuthenticationService {
     this.currentUser = { sub: username, ...this.getSessionTokenPayload() }
     this._loggedIn = true
 
-    return { challengeResponse: challengeResponse, token: res }
+    return challengeResponse
   }
 
   /**
@@ -144,8 +141,8 @@ export class UserAuthenticationService {
   public async signupUser(
     username: string,
     password: string,
-    additionalPayloadFields: Record<string, string>,
-  ) {
+    additionalPayloadFields?: Record<string, string>,
+  ): Promise<ServerChallengeResponse> {
     const encryptionKeyPair = await this.cryptoService.generateKeyPair(KeypairAlgorithm.Encrypting)
     this.cryptoService.setPrivateEncryptionKey(encryptionKeyPair.privateKey)
 
@@ -182,11 +179,19 @@ export class UserAuthenticationService {
       publicEncryptionKey: encryptionKeyPair.publicKey,
       encryptedPrivateEncryptionKey: wrappedEncryptionPrivKey,
       privateEncryptionKeyInitVector: encryptionKeyIv,
-      ...additionalPayloadFields,
+      ...(additionalPayloadFields || {}),
     })
 
     // login to get token for subsequent api calls
     return await this.login(username, password)
+  }
+
+  /**
+   * Clear session tokens and keys
+   */
+  public logout() {
+    this.clearSessionToken()
+    this.cryptoService.clearEncryptionKeys()
   }
 
   /**
@@ -232,12 +237,12 @@ export class UserAuthenticationService {
   /**
    * Part 1 of the login process.  Should return a new challenge to be signed by the user's private signing key.
    */
-  private async getChallengeFromServer(username: string): Promise<ChallengeResponseInterface> {
+  private async getChallengeFromServer(username: string): Promise<ServerChallengeResponse> {
     const body: LoginRequestInterface = { username }
     const baseUri = this.baseUri
 
     // Get challenge and basic user info
-    const res = await axios.post<ChallengeResponseInterface>(
+    const res = await axios.post<ServerChallengeResponse>(
       `${baseUri}${this.configService.challengeRetrieveRoute}`,
       body,
     )
@@ -257,10 +262,5 @@ export class UserAuthenticationService {
 
   private clearSessionToken() {
     window.localStorage.removeItem('session_token')
-  }
-
-  async logout() {
-    this.clearSessionToken()
-    await this.cryptoService.clearEncryptionKeys()
   }
 }

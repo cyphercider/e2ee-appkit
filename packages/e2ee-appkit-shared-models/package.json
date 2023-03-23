@@ -1,8 +1,12 @@
 {
   "name": "@cyphercider/e2ee-appkit-shared-models",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
-  "repository": "https://github.com/cyphercider/e2ee-appkit",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cyphercider/e2ee-appkit",
+    "directory": "packages/e2ee-appkit-shared-models"
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
