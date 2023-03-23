@@ -32,7 +32,7 @@ export class CryptoService {
   /**
    * Clear all encryption keypairs from browser storage - e.g. on logout
    */
-  public async clearEncryptionKeys() {
+  public clearEncryptionKeys() {
     this.keyStore.delete(KeyIndexes.private_encryption_key)
     this.keyStore.delete(KeyIndexes.public_encryption_key)
     this.keyStore.delete(KeyIndexes.private_signing_key)

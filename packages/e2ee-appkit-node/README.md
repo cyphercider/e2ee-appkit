@@ -13,7 +13,7 @@ This library runs in node and provides:
 # Installation
 
 ```sh
-npm i -S @cyphercider/e2ee-appkit-node
+npm i -S @cyphercider/e2ee-{appkit-node,appkit-shared-models}
 ```
 
 # Usage

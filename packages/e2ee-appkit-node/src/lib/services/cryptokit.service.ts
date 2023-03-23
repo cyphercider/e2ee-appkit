@@ -1,5 +1,5 @@
 import {
-  ChallengeResponseInterface,
+  ServerChallengeResponse,
   SubmitChallengeInterface,
   TokenPayload,
   UserInterface,
@@ -22,10 +22,10 @@ export class CryptoKit {
    *
    * @param user - The user object you have already persisted on your server.
    */
-  public static getChallenge(user: UserInterface): ChallengeResponseInterface {
+  public static getChallenge(user: UserInterface): ServerChallengeResponse {
     const challengeText = CHALLENGE_TEXT_PREFIX + Date.now()
 
-    const res: ChallengeResponseInterface = {
+    const res: ServerChallengeResponse = {
       challengeText,
       publicSigningKey: user.publicSigningKey,
       encryptedPrivateSigningKey: user.encryptedPrivateSigningKey,

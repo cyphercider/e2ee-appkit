@@ -4,7 +4,9 @@ The browser side of a kit for end-to-end-encrypted (e2ee) apps in Typescript.  S
 
 # Installation
 
-npm i -S @cyphercider/e2ee-appkit-browser
+```sh
+npm i -S @cyphercider/e2ee-{appkit-browser,appkit-shared-models}
+```
 
 # Overall Design
 
@@ -17,7 +19,7 @@ This libary makes it easy to:
 - User signup and login functions, calling backend APIs for obtaining and submitting signing challenges
 - Session token (jwt) storage and decoding functionality
 
-# Usage
+# Crypto Service Usage
 
 ## Crypto Service Initialization
 
@@ -29,24 +31,14 @@ const cryptoService = new CryptoService()
 
 ## Asymmetric keypair generation, signing, and verification
 
-Asymmetric signing and verification with RS256.
-
-### Generate an asymmetric signing keypair
-
 ```ts
+// Generate an asymmetric signing keypair
 const keypair = await cryptoService.generateKeyPair(KeypairAlgorithm.Signing)
-```
 
-### Sign text with a private key
-
-```ts
+// Sign text with a private key
 const signed = await cryptoService.signContent('text to sign', keypair.privateKey)
-```
 
-### Verify signature with a public key
-
-```ts
-// This function will throw an exception if the signature is invalid
+// Verify signature with a public key.  This function will throw an exception if the signature is invalid
 await cryptoService.verifySignature(
   signed.signature,
   signed.protected,
@@ -57,110 +49,182 @@ await cryptoService.verifySignature(
 
 ## Asymmetric keypair generation, encryption, and decryption
 
-Asymmetric encryption and decryption with RSA-OAEP-256.
-
-### Generate a asymmetric encrypting keypair
 
 ```ts
+// Generate a asymmetric encrypting keypair
 const keypair = await cryptoService.generateKeyPair(KeypairAlgorithm.Encrypting)
-```
 
-### Encrypt content with a public key 
-
-```ts
+// Encrypt content with a public key 
 const encryptedContent = await cryptoService.encryptWithPublicKey(
   challengeContent,
   userKey.publicKey,
 )
-```
 
-### Decrypt content with a private key
-
-```ts
+// Decrypt content with a private key
 const decrypted = await cryptoService.decryptWithPrivateKey(encryptedJwe, userKey.privateKey)
 ```
 
 ## Symmetric key generation, encryption, and decryptiton
 
-Symmetric encryption and decryption with AES-GCM (length 256).
-
-### Generate a symmetric key
-
 ```ts
+// Generate a symmetric key
 const key = await cryptoService.generateSymmetricKey()
 const initVector = 'random string' // A non-secret random string required in symmetric encryption with AES-GCM 
 const secret = 'thesecret'
 
-```
 
-### Encrypt with symmetric key
-
-```ts
+// Encrypt with symmetric key
 const encrypted = await cryptoService.encryptWithSymmetricKey(key, secret, initVector)
-```
 
-### Decrypt with symmetric key
-
-```ts
+// Decrypt with symmetric key
 const decrypted = await cryptoService.decryptWithSymmetricKey(key, encrypted, initVector)
 ```
 
 ## Encryption with key derived from a password
 
-### Encrypt text with a password
-
-
 ```ts
+// The init vector is a non-secret string and must be the same for wrap / unwrap operations.  
+const INIT_VECTOR = 'same for encrypt and decrypt' 
+
+// Encrypt text with a password
 const encryptedText = await cryptoService.encryptTextWithPassword(
   'the password',
   'text to encrypt',
-  'An initialization vector', // This is a random string and must be the same for wrap / unwrap operations.  
+  INIT_VECTOR, 
   'salt', // A string used as a salt for PKBDF2.  You could use a user's username for this.
 )
-```
 
-### Decrypt text with a password
-
-```ts
+// Decrypt text with a password
 const decryptedText = await cryptoService.decryptTextWithPassword(
   'the password',
   encryptedText,
-  'An initialization vector', // This is a random string and must be the same for wrap / unwrap operations.  
+  INIT_VECTOR, // This is a random string and must be the same for wrap / unwrap operations.
   'salt', // A string used as a salt for PKBDF2.  You could use a user's username for this.
 )
 ```
 
 ## Key storage via `session-keystore`
 
-### Set user keys
-
 ```ts
+// Set user keys
 cryptoService.setPublicEncryptionKey(pubEncrypting)
 cryptoService.setPrivateEncryptionKey(privEncrypting)
 cryptoService.setPublicSigningKey(pubSigning)
 cryptoService.setPrivateSigningKey(privSigning)
-```
 
-### Get user keys
-
-```ts
+// Get user keys
 const pubEncr = cryptoService.getPublicEncryptionKey()
 const privEncr = cryptoService.getPrivateEncryptionKey()
 const pubSign = cryptoService.getPublicSigningKey()
 const privSign = cryptoService.getPrivateSigningKey()
-```
 
-### Clear user keys
-
-```ts
+// Clear user keys
 cryptoService.clearEncryptionKeys()
-```
 
-### Determine if all keys are present
-
-```ts
+// Determine if all keys are present
 const allArePresent = cryptoService.allKeysArePresent
 ```
+
+## User Service Usage
+
+### Initialization
+
+```ts
+import {
+  ConfigService,
+  CryptoService,
+  CryptoVerificationService,
+  UserAuthenticationService,
+} from '@cyphercider/e2ee-appkit-browser'
+
+const cryptoService = new CryptoService()
+/**
+ *  ConfigService Initialization
+ * 
+ *  See additional (optional) params for AuthN routes for ConfigService initialization. Defaults are:
+ * 
+ *  challengeSubmitRoute = '/authn/submit-challenge',
+ *  challengeRetrieveRoute = '/authn/get-challenge',
+ *  loginSubmitRoute = '/login',
+ *  signupRoute = '/authn/signup',
+ *  loginFrontendRoute = '/login',
+ */
+const config = new ConfigService('http://your-backend-base-url') 
+const verificationService = new CryptoVerificationService(cryptoService)
+const userAuthService = new UserAuthenticationService(
+  config,
+  cryptoService,
+  verificationService,
+)
+```
+
+### Log in and log out
+
+```ts
+// Log in with a given username and password
+await userAuthService.login(username, password)
+
+// Log out. Clears session token and all user keys from the browser.
+await userAuthService.logout()
+```
+
+### Get current session information
+
+```ts
+// Get current user.  Returns the decoded JWT contents following the most recent user login.  Contains at least the attribute `sub: string`
+userAuthService.currentUser
+
+// Get session token.  Returns token in local storage `session_token`.
+const token = userAuthService.getSessionToken()
+
+// Get session token payload.  Gets token from storage, decodes, and returns.
+const payload = userAuthService.getSessionTokenPayload()
+
+// A boolean of whether the user is logged in.  Returns true if session token is in local storage and all keys are present in `session_keystore`.
+const isLoggedIn = userAuthService.isLoggedIn
+```
+
+### Signup user
+
+```ts
+// Optional extra attributes you want to store about this user at signup time that will get passed in the payload to the login endpoint.
+const extraAttributes = {
+  attributeIWantInUserDetail: 'attribute value'
+  ...
+}
+
+/**
+ * Will attempt to create a user on the server and log in.  If successful, it will will return an object containing user keys and the user session token.  
+ * 
+ * The signup process will set the session token as well as `currentUser` if successful.
+ * 
+ * The login process will 
+ */
+await userAuthService.signupUser(username, password, extraAttributes)
+const user = userAuthService.currentUser // Get cached / decoded token with user information (including any additional token attributes added by your server logic)
+```
+
+### Login user
+
+Similar to signup, but without the extra attributes.
+
+```ts
+await userAuthService.login(username, password)
+const user = userAuthService.currentUser // Get cached / decoded token with user information (including any additional token attributes added by your server logic)
+```
+
+### Log out user
+
+```ts
+userAuthService.logout()
+```
+
+### Redirect user to frontend login page
+
+```ts
+userAuthService.redirectToLogin()
+```
+
 
 ## Algorithms used
 
