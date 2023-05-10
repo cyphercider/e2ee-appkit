@@ -6,7 +6,6 @@ export class ConfigService {
     public readonly backendHost: string,
     public readonly challengeSubmitRoute: string = '/authn/submit-challenge',
     public readonly challengeRetrieveRoute: string = '/authn/get-challenge',
-    public readonly loginSubmitRoute: string = '/login',
     public readonly signupRoute: string = '/authn/signup',
     /**
      * Route to redirect user to when `redirectToLogin` function is called.

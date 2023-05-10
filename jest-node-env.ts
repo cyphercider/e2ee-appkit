@@ -1,6 +1,6 @@
 // To compensate for missing TextEncoder in jsdom per https://github.com/jsdom/jsdom/issues/2524
 
-import { webcrypto as crypto, webcrypto } from 'crypto'
+import { webcrypto as crypto } from 'crypto'
 import { TestEnvironment } from 'jest-environment-node'
 import JSDOMEnvironment, { TestEnvironment as TestEnvironmentJsdom } from 'jest-environment-jsdom'
 
@@ -22,12 +22,13 @@ class CustomNodeEnvironment extends TestEnvironment {
     glo.TextDecoder = tdimp
     glo.TextEncoder = teimp
     glo.window = this.jsdomEnv.global.window
-    glo.window.crypto = crypto
-    // Necessary explicit assignment for some reason
-    glo.window.crypto.subtle = crypto.subtle
 
-    //     console.log(`crypto subtle`, crypto.subtle)
-    //     console.log(`window crypto subtle`, glo.window.crypto.subtle)
+    Object.defineProperty(glo.window, 'crypto', {
+      value: crypto,
+      writable: true,
+      configurable: true,
+    })
+
     glo.document = this.jsdomEnv.global.document
     glo.navigator = this.jsdomEnv.global.navigator
   }
