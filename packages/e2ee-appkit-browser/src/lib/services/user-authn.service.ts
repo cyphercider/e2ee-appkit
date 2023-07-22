@@ -1,4 +1,5 @@
 import {
+  KeyPair,
   KeypairAlgorithm,
   LoginRequestInterface,
   ServerChallengeResponse,
@@ -142,11 +143,17 @@ export class UserAuthenticationService {
     username: string,
     password: string,
     additionalPayloadFields?: Record<string, string>,
+    encryptingKeypair?: KeyPair,
+    signingKeyPair?: KeyPair,
   ): Promise<ServerChallengeResponse> {
-    const encryptionKeyPair = await this.cryptoService.generateKeyPair(KeypairAlgorithm.Encrypting)
-    this.cryptoService.setPrivateEncryptionKey(encryptionKeyPair.privateKey)
+    if (!encryptingKeypair) {
+      encryptingKeypair = await this.cryptoService.generateKeyPair(KeypairAlgorithm.Encrypting)
+    }
+    this.cryptoService.setPrivateEncryptionKey(encryptingKeypair.privateKey)
 
-    const signingKeyPair = await this.cryptoService.generateKeyPair(KeypairAlgorithm.Signing)
+    if (!signingKeyPair) {
+      signingKeyPair = await this.cryptoService.generateKeyPair(KeypairAlgorithm.Signing)
+    }
     await this.cryptoVerificationService.TestSigningKeyPair(
       signingKeyPair.publicKey,
       signingKeyPair.privateKey,
@@ -157,7 +164,7 @@ export class UserAuthenticationService {
     const encryptionKeyIv = ulid()
     const wrappedEncryptionPrivKey = await this.cryptoService.encryptTextWithPassword(
       password,
-      encryptionKeyPair.privateKey,
+      encryptingKeypair.privateKey,
       encryptionKeyIv,
       username,
     )
@@ -176,7 +183,7 @@ export class UserAuthenticationService {
       publicSigningKey: signingKeyPair.publicKey,
       encryptedPrivateSigningKey: wrappedSigningPrivKey,
       privateSigningKeyInitVector: signingKeyIv,
-      publicEncryptionKey: encryptionKeyPair.publicKey,
+      publicEncryptionKey: encryptingKeypair.publicKey,
       encryptedPrivateEncryptionKey: wrappedEncryptionPrivKey,
       privateEncryptionKeyInitVector: encryptionKeyIv,
       ...(additionalPayloadFields || {}),

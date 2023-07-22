@@ -198,9 +198,14 @@ const extraAttributes = {
  * 
  * The signup process will set the session token as well as `currentUser` if successful.
  * 
- * The login process will 
+ * @username - Username for the user.  Will be used along with password to wrap the user's keys.
+ * @password - Password for the user.  Will be used along with username to wrap the user's keys.
+ * @extraAttributes - Optional extra attributes that will be included in the generated token
+ * @signingKeypair - Optional signing keypair. Useful if you need to use a known keypair at the time of signup.
+ * @encryptingKeypair - Optional signing keypair. Useful if you need to use a known keypair at the time of signup.
+ * 
  */
-await userAuthService.signupUser(username, password, extraAttributes)
+await userAuthService.signupUser(username, password, extraAttributes?, encryptingKeypair?, signingKeypair?)
 const user = userAuthService.currentUser // Get cached / decoded token with user information (including any additional token attributes added by your server logic)
 ```
 
