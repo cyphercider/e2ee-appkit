@@ -18,6 +18,9 @@ For usage information, see readmes:
 - [Appkit Browser Readme](./packages/e2ee-appkit-browser/README.md)
 - [Appkit Node Readme](./packages/e2ee-appkit-node/README.md)
 
+## Publish process
 
+1. run `npm run build`
+2. CD into each affected repo and run `npm publish`
 
 
