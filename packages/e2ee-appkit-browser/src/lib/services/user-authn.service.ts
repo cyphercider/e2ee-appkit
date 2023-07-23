@@ -69,26 +69,55 @@ export class UserAuthenticationService {
 
   /**
    * Login to the server with username and password
+   *
+   * @param username - username to login with. This is the salt used in the PBKDF2 algorithm
+   * @param password - password to login with
+   * @param alternateUsername - optional alternate username to use for password reset. This is the salt used in the PBKDF2 algorithm if using an alternate username / password for password reset.
+   * @param alternatePassword - optional alternate password to use for password reset
    */
-  public async login(username: string, password: string): Promise<ServerChallengeResponse> {
+  public async login(
+    username: string,
+    password: string,
+    alternateUsername?: string,
+    alternatePassword?: string,
+  ): Promise<ServerChallengeResponse> {
     const challengeResponse = await this.getChallengeFromServer(username)
 
     this.cryptoService.setPublicEncryptionKey(challengeResponse.publicEncryptionKey)
     this.cryptoService.setPublicSigningKey(challengeResponse.publicSigningKey)
 
-    const unwrappedEncKey = await this.cryptoService.decryptTextWithPassword(
-      password,
-      challengeResponse.encryptedPrivateEncryptionKey,
-      challengeResponse.privateEncryptionKeyInitVector,
-      username,
-    )
+    let unwrappedEncKey: string
+    let unwrappedSigningKey: string
+    // If alternate username and password are provided, use them to decrypt the private keys
+    if (alternateUsername && alternatePassword) {
+      unwrappedEncKey = await this.cryptoService.decryptTextWithPassword(
+        alternatePassword,
+        challengeResponse.encryptedPrivateEncryptionKeyAlternate,
+        challengeResponse.privateEncryptionKeyInitVector,
+        alternateUsername,
+      )
 
-    const unwrappedSigningKey = await this.cryptoService.decryptTextWithPassword(
-      password,
-      challengeResponse.encryptedPrivateSigningKey,
-      challengeResponse.privateSigningKeyInitVector,
-      username,
-    )
+      unwrappedSigningKey = await this.cryptoService.decryptTextWithPassword(
+        alternatePassword,
+        challengeResponse.encryptedPrivateSigningKeyAlternate,
+        challengeResponse.privateSigningKeyInitVector,
+        alternateUsername,
+      )
+    } else {
+      unwrappedEncKey = await this.cryptoService.decryptTextWithPassword(
+        password,
+        challengeResponse.encryptedPrivateEncryptionKey,
+        challengeResponse.privateEncryptionKeyInitVector,
+        username,
+      )
+
+      unwrappedSigningKey = await this.cryptoService.decryptTextWithPassword(
+        password,
+        challengeResponse.encryptedPrivateSigningKey,
+        challengeResponse.privateSigningKeyInitVector,
+        username,
+      )
+    }
 
     this.cryptoService.setPrivateEncryptionKey(unwrappedEncKey)
     this.cryptoService.setPrivateSigningKey(unwrappedSigningKey)
@@ -142,6 +171,8 @@ export class UserAuthenticationService {
   public async signupUser(
     username: string,
     password: string,
+    alternateUsername?: string,
+    alternatePassword?: string,
     additionalPayloadFields?: Record<string, string>,
     encryptingKeypair?: KeyPair,
     signingKeyPair?: KeyPair,
@@ -161,31 +192,47 @@ export class UserAuthenticationService {
     )
     this.cryptoService.setPrivateSigningKey(signingKeyPair.privateKey)
 
-    const encryptionKeyIv = ulid()
-    const wrappedEncryptionPrivKey = await this.cryptoService.encryptTextWithPassword(
+    const privateSigningKeyInitVector = ulid()
+    const encryptedPrivateSigningKey = await this.cryptoService.encryptTextWithPassword(
       password,
-      encryptingKeypair.privateKey,
-      encryptionKeyIv,
+      signingKeyPair.privateKey,
+      privateSigningKeyInitVector,
       username,
     )
 
-    const signingKeyIv = ulid()
-    const wrappedSigningPrivKey = await this.cryptoService.encryptTextWithPassword(
-      password,
+    const encryptedPrivateSigningKeyAlternate = await this.cryptoService.encryptTextWithPassword(
+      alternatePassword,
       signingKeyPair.privateKey,
-      signingKeyIv,
+      privateSigningKeyInitVector,
+      alternateUsername,
+    )
+
+    const privateEncryptionKeyInitVector = ulid()
+    const encryptedPrivateEncryptionKey = await this.cryptoService.encryptTextWithPassword(
+      password,
+      encryptingKeypair.privateKey,
+      privateEncryptionKeyInitVector,
       username,
+    )
+
+    const encryptedPrivateEncryptionKeyAlternate = await this.cryptoService.encryptTextWithPassword(
+      alternatePassword,
+      encryptingKeypair.privateKey,
+      privateEncryptionKeyInitVector,
+      alternateUsername,
     )
 
     // Create user remotely
     await this.signupUserOnServer({
       username: username,
       publicSigningKey: signingKeyPair.publicKey,
-      encryptedPrivateSigningKey: wrappedSigningPrivKey,
-      privateSigningKeyInitVector: signingKeyIv,
+      encryptedPrivateSigningKey,
+      encryptedPrivateSigningKeyAlternate,
+      privateSigningKeyInitVector,
       publicEncryptionKey: encryptingKeypair.publicKey,
-      encryptedPrivateEncryptionKey: wrappedEncryptionPrivKey,
-      privateEncryptionKeyInitVector: encryptionKeyIv,
+      encryptedPrivateEncryptionKey,
+      encryptedPrivateEncryptionKeyAlternate,
+      privateEncryptionKeyInitVector,
       ...(additionalPayloadFields || {}),
     })
 

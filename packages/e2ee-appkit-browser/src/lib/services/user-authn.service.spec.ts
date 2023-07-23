@@ -35,7 +35,7 @@ describe('test user authn service', () => {
     const user = ulid()
     const pass = ulid()
 
-    await userAuthnService.signupUser(user, pass, { defaultCollectionId: ulid() })
+    await userAuthnService.signupUser(user, pass, '', '', { defaultCollectionId: ulid() })
 
     const res = await userAuthnService.login(user, pass)
     expect(res.token).toBeDefined()
@@ -57,7 +57,7 @@ describe('test user authn service', () => {
 
     expect(userAuthnService.isLoggedIn).toBeFalsy()
 
-    await userAuthnService.signupUser(user, pass, { defaultCollectionId: ulid() })
+    await userAuthnService.signupUser(user, pass, '', '', { defaultCollectionId: ulid() })
 
     await userAuthnService.login(user, pass)
 
@@ -113,7 +113,7 @@ describe('test user authn service', () => {
     })
 
     await expect(async () => {
-      await userAuthnService.signupUser(user, pass, { defaultCollectionId: ulid() })
+      await userAuthnService.signupUser(user, pass, '', '', { defaultCollectionId: ulid() })
     }).rejects.toThrow()
   })
 

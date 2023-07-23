@@ -29,9 +29,11 @@ export class CryptoKit {
       challengeText,
       publicSigningKey: user.publicSigningKey,
       encryptedPrivateSigningKey: user.encryptedPrivateSigningKey,
+      encryptedPrivateSigningKeyAlternate: user.encryptedPrivateSigningKeyAlternate,
       privateSigningKeyInitVector: user.privateSigningKeyInitVector,
       publicEncryptionKey: user.publicEncryptionKey,
       encryptedPrivateEncryptionKey: user.encryptedPrivateEncryptionKey,
+      encryptedPrivateEncryptionKeyAlternate: user.encryptedPrivateEncryptionKeyAlternate,
       privateEncryptionKeyInitVector: user.privateEncryptionKeyInitVector,
     }
 
