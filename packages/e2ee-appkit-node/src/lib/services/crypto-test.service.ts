@@ -4,12 +4,21 @@ import {
   SignatureResult,
   UserInterface,
 } from '@cyphercider/e2ee-appkit-shared-models'
-import { exportPKCS8, exportSPKI, FlattenedSign, importPKCS8, KeyLike, generateKeyPair } from 'jose'
+import {
+  exportPKCS8,
+  exportSPKI,
+  FlattenedSign,
+  importPKCS8,
+  KeyLike,
+  generateKeyPair,
+  flattenedVerify,
+  importSPKI,
+} from 'jose'
 import { ulid } from 'ulid'
 
 import { createHash } from 'crypto'
 
-export class TestUtils {
+export class CryptoUtils {
   /**
    * Generate keypair for testing
    */
@@ -36,6 +45,17 @@ export class TestUtils {
     return this.signTextWithPrivateKeyRaw(content, privKeyImported)
   }
 
+  /**
+   * ************************ Private methods ****************************
+   */
+
+  private static async importPubKey(
+    pubKeyString: string,
+    algo: KeypairAlgorithm,
+  ): Promise<KeyLike> {
+    return await importSPKI(pubKeyString, algo)
+  }
+
   private static async signTextWithPrivateKeyRaw(
     payload: string,
     privKey: KeyLike,
@@ -49,8 +69,41 @@ export class TestUtils {
     return {
       signature: res.signature,
       protected: res.protected,
-      payload: res.payload,
     }
+  }
+
+  /**
+   * Verify a private key signature with the public key
+   */
+  public static async verifySignature(
+    signature: string,
+    protectedStr: string,
+    pubkey: string,
+    content: string,
+  ) {
+    const imported = await this.importPubKey(pubkey, KeypairAlgorithm.Signing)
+
+    return await this.verifySignatureRaw(signature, protectedStr, imported, content)
+  }
+
+  private static async verifySignatureRaw(
+    signature: string,
+    protectedStr: string,
+    pubkey: KeyLike,
+    content: string,
+  ) {
+    const payloadHash = await this.getSha256hash(content)
+    const buff = Buffer.from(payloadHash, 'utf-8')
+    const base64 = buff.toString('base64').replaceAll('=', '')
+
+    console.log('*** computed hash base64: ', base64)
+
+    const res = await flattenedVerify(
+      { payload: base64, signature: signature, protected: protectedStr },
+      pubkey,
+    )
+
+    return res
   }
 
   private static async importPrivateKey(
@@ -67,10 +120,12 @@ export class TestUtils {
   private static async getSha256hash(input: string) {
     return createHash('sha256').update(input).digest('base64')
   }
+}
 
+export class TestUtils {
   static async generateTestUser(): Promise<UserInterface> {
-    const encryptingKey = await this.generateKeyPair(KeypairAlgorithm.Encrypting)
-    const signingKey = await this.generateKeyPair(KeypairAlgorithm.Signing)
+    const encryptingKey = await CryptoUtils.generateKeyPair(KeypairAlgorithm.Encrypting)
+    const signingKey = await CryptoUtils.generateKeyPair(KeypairAlgorithm.Signing)
 
     return {
       username: 'username',

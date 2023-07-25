@@ -4,3 +4,8 @@ export interface SubmitChallengeInterface {
   challengeText: string
   signature: string
 }
+
+export interface SubmitChallengeInterfaceWithServerSignature extends SubmitChallengeInterface {
+  serverSignature: string
+  serverProtected: string
+}

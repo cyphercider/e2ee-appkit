@@ -16,7 +16,13 @@
     "lint:e2ee-node": "nx lint e2ee-appkit-node --fix",
     "test:e2ee-node:report": "sensible-browser ./coverage/packages/e2ee-appkit-node/index.html",
     "clean": "pnpm nx reset && rm -rf dist",
-    "prebuild": "rm -rf dist"
+    "prebuild": "rm -rf dist",
+    "login": "pnpm login",
+    "build-and-publish-all": "pnpm run build && pnpm run publish-all",
+    "publish:e2ee-browser": "pnpm publish ./dist/e2ee-appkit-browser",
+    "publish:e2ee-node": "pnpm publish ./dist/e2ee-appkit-node",
+    "publish:e2ee-shared-modules": "pnpm publish ./dist/e2ee-appkit-shared-models",
+    "publish-all": "pnpm run publish:e2ee-browser && pnpm run publish:e2ee-node && pnpm run publish:e2ee-shared-modules"
   },
   "private": true,
   "devDependencies": {

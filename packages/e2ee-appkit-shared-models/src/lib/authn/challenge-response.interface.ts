@@ -13,3 +13,8 @@ export interface ServerChallengeResponse {
   // additional response data from server if needed
   [key: string]: string
 }
+
+export interface SignedServerChallengeResponse extends ServerChallengeResponse {
+  serverSignature: string
+  serverProtected: string
+}

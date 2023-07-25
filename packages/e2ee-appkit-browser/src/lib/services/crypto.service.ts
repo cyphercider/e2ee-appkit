@@ -345,7 +345,6 @@ export class CryptoService {
     return {
       signature: res.signature,
       protected: res.protected,
-      payload: res.payload,
     }
   }
 
