@@ -15,6 +15,8 @@ describe('node authentication service', () => {
   it('should verify signature', async () => {
     const keypair = await CryptoUtils.generateKeyPair(KeypairAlgorithm.Signing)
 
+    console.log('keypair', keypair)
+
     const signature = await CryptoUtils.signContent('content', keypair.privateKey)
 
     expect(signature).toBeTruthy()

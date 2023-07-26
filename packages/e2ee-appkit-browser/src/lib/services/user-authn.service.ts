@@ -3,8 +3,10 @@ import {
   KeypairAlgorithm,
   LoginRequestInterface,
   ServerChallengeResponse,
+  SignedServerChallengeResponse,
   SignupInterface,
   SubmitChallengeInterface,
+  SubmitChallengeInterfaceWithServerSignature,
   TokenPayload,
   UserInterface,
 } from '@cyphercider/e2ee-appkit-shared-models'
@@ -72,12 +74,14 @@ export class UserAuthenticationService {
    *
    * @param username - username to login with. This is the salt used in the PBKDF2 algorithm
    * @param password - password to login with
+   * @param additionalPayloadFields - optional fields to pass to the server on login if your implementation requires it
    * @param alternateUsername - optional alternate username to use for password reset. This is the salt used in the PBKDF2 algorithm if using an alternate username / password for password reset.
    * @param alternatePassword - optional alternate password to use for password reset
    */
   public async login(
     username: string,
     password: string,
+    additionalPayloadFields?: Record<string, string>,
     alternateUsername?: string,
     alternatePassword?: string,
   ): Promise<ServerChallengeResponse> {
@@ -147,11 +151,14 @@ export class UserAuthenticationService {
       throw err
     }
 
-    const submission: SubmitChallengeInterface = {
+    const submission: SubmitChallengeInterfaceWithServerSignature = {
       username,
       protected: signed.protected,
       challengeText: challengeResponse.challengeText,
       signature: signed.signature,
+      serverProtected: challengeResponse.serverProtected,
+      serverSignature: challengeResponse.serverSignature,
+      additionalPayloadFields,
     }
 
     const res = await this.submitChallengeToServer(submission)
@@ -237,7 +244,7 @@ export class UserAuthenticationService {
     })
 
     // login to get token for subsequent api calls
-    return await this.login(username, password)
+    return await this.login(username, password, additionalPayloadFields)
   }
 
   /**
@@ -291,12 +298,12 @@ export class UserAuthenticationService {
   /**
    * Part 1 of the login process.  Should return a new challenge to be signed by the user's private signing key.
    */
-  private async getChallengeFromServer(username: string): Promise<ServerChallengeResponse> {
+  private async getChallengeFromServer(username: string): Promise<SignedServerChallengeResponse> {
     const body: LoginRequestInterface = { username }
     const baseUri = this.baseUri
 
     // Get challenge and basic user info
-    const res = await axios.post<ServerChallengeResponse>(
+    const res = await axios.post<SignedServerChallengeResponse>(
       `${baseUri}${this.configService.challengeRetrieveRoute}`,
       body,
     )

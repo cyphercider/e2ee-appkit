@@ -3,6 +3,7 @@ export interface SubmitChallengeInterface {
   protected: string
   challengeText: string
   signature: string
+  additionalPayloadFields?: Record<string, string>
 }
 
 export interface SubmitChallengeInterfaceWithServerSignature extends SubmitChallengeInterface {
