@@ -232,6 +232,7 @@ export class UserAuthenticationService {
     // Create user remotely
     await this.signupUserOnServer({
       username: username,
+      alternateUsername: alternateUsername,
       publicSigningKey: signingKeyPair.publicKey,
       encryptedPrivateSigningKey,
       encryptedPrivateSigningKeyAlternate,
