@@ -108,13 +108,101 @@ describe('crypto service', () => {
       toEncrypt,
     }
 
-    await cryptoService.encryptSpecifiedFields(obj, key, iv, ['toEncrypt'])
-    expect(obj.plainText).toEqual(plainText)
-    expect(obj.toEncrypt).not.toEqual(toEncrypt)
+    const encrypted = await cryptoService.encryptSpecifiedFields(obj, key, iv, ['toEncrypt'])
+    expect(encrypted.plainText).toEqual(plainText)
+    expect(encrypted.toEncrypt).not.toEqual(toEncrypt)
 
-    await cryptoService.decryptSpecifiedFields(obj, key, iv, ['toEncrypt'])
-    expect(obj.plainText).toEqual(plainText)
-    expect(obj.toEncrypt).toEqual(toEncrypt)
+    const decrypted = await cryptoService.decryptSpecifiedFields(encrypted, key, iv, ['toEncrypt'])
+    expect(decrypted.plainText).toEqual(plainText)
+    expect(decrypted.toEncrypt).toEqual(toEncrypt)
+  })
+
+  it('should encrypt inner objects recursively', async () => {
+    const obj = {
+      field1: 'field1',
+      field2: {
+        field3: 'field3',
+        field4: {
+          field5: 'field5',
+        },
+      },
+      arrayField1: [
+        {
+          field1: 'field1val1',
+          field2: {
+            field3: 'field3val1',
+            field4: {
+              field5: 'field5val1',
+            },
+          },
+        },
+        {
+          field1: 'field1val2',
+          field2: {
+            field3: 'field3val2',
+            field4: {
+              field5: 'field5val2',
+            },
+          },
+        },
+      ],
+    }
+
+    const key = await cryptoService.generateSymmetricKey()
+    const iv = ulid()
+
+    //     await cryptoService.encryptSpecifiedFields(obj, key, iv, ['field1', 'field2'])
+    const encrypted = await cryptoService.encryptSpecifiedFields(obj, key, iv, [
+      'field1',
+      'field2',
+      'arrayField1',
+    ])
+
+    console.log('after encrypt:')
+    console.log(JSON.stringify(encrypted, null, 2))
+
+    const decrypted = await cryptoService.decryptSpecifiedFields(encrypted, key, iv, [
+      'field1',
+      'field2',
+      'arrayField1',
+    ])
+
+    console.log('after decrypt:')
+    console.log(JSON.stringify(decrypted, null, 2))
+
+    expect(decrypted.field1).toEqual('field1')
+    expect(decrypted.field2.field3).toEqual('field3')
+    expect(decrypted.field2.field4.field5).toEqual('field5')
+  })
+
+  it('should not encrypt blank fields', async () => {
+    const key = await cryptoService.generateSymmetricKey()
+    const iv = ulid()
+    const field1 = ''
+    const field2 = ulid()
+    const field3 = ulid()
+    const obj = {
+      field1,
+      field2,
+      field3,
+    }
+
+    const fieldsToEncrypt = ['field1', 'field2', 'field3']
+
+    const encrypted = await cryptoService.encryptSpecifiedFields(obj, key, iv, fieldsToEncrypt)
+    expect(encrypted.field1).toEqual(field1)
+    expect(encrypted.field2).not.toEqual(field2)
+    expect(encrypted.field3).not.toEqual(field3)
+
+    const decrypted = await cryptoService.decryptSpecifiedFields(
+      encrypted,
+      key,
+      iv,
+      fieldsToEncrypt,
+    )
+    expect(decrypted.field1).toEqual(field1)
+    expect(decrypted.field2).toEqual(field2)
+    expect(decrypted.field3).toEqual(field3)
   })
 
   it('should store, retrieve, and clear keys', async () => {

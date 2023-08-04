@@ -201,39 +201,98 @@ export class CryptoService {
   }
 
   /**
-   * Takes an object and encrypts user-specified fields before returning the object.
+   * Takes an object, creates a copy, encrypts user-specified fields in-place, and returns the same object.
    *
    * @param obj - The object that has the string fields to encrypt
-   * @param fields - The specific fields to encrypt
+   * @param symmetricKey - The serialized symmetric key to use for encryption
+   * @param fieldsToEncrypt - The specific fields to encrypt
+   * @param initVector - The init vector used to encrypt the fields
+   * @param recursivelyEncryptObjects - If true, will recursively encrypt sub-objects
+   * @param currentlyBelowTopLevel - Used internally to track if we're currently below the top level for recursive calls.  If below the top level, we'll encrypt all fields, because we're already inside an object that was specified to be encrypted.
    */
-  public async encryptSpecifiedFields(
-    obj: any,
-    symKeySerialized: string,
+  public async encryptSpecifiedFields<T>(
+    obj: T,
+    symmetricKey: string,
     initVector: string,
-    fields: string[],
-  ) {
-    const symKey = await this.importSymmetricKey(symKeySerialized)
-    for (const field of fields) {
-      obj[field] = await this.encryptWithSymmetricKeyRaw(symKey, obj[field], initVector)
+    fieldsToEncrypt: string[],
+    recursivelyEncryptObjects = true,
+    currentlyBelowTopLevel = false,
+  ): Promise<T> {
+    // We need to make a deep copy of the object so we don't mutate the original
+    obj = JSON.parse(JSON.stringify(obj))
+
+    if (!symmetricKey) throw new Error('symmetricKey is required to call encryptSpecifiedFields')
+    if (!initVector) throw new Error('initVector is required to call encryptSpecifiedFields')
+
+    const symKey = await this.importSymmetricKey(symmetricKey)
+
+    const fieldsToProcess = currentlyBelowTopLevel ? Object.keys(obj) : fieldsToEncrypt
+
+    for (const field of fieldsToProcess) {
+      if (!obj[field] && !currentlyBelowTopLevel) continue
+
+      if (typeof obj[field] === 'object' && recursivelyEncryptObjects) {
+        obj[field] = await this.encryptSpecifiedFields(
+          obj[field],
+          symmetricKey,
+          initVector,
+          fieldsToEncrypt,
+          recursivelyEncryptObjects,
+          true,
+        )
+      } else if (typeof obj[field] === 'string') {
+        obj[field] = await this.encryptWithSymmetricKeyRaw(symKey, obj[field], initVector)
+      }
     }
     return obj
   }
 
   /**
-   * Takes an object with encrypted fields and decrypts the specified fields before turning the object.
+   * Takes an object with encrypted fields, creates a copy, decrypts the specified fields, and returns the new object
    *
    * @param obj - The object that has the string fields to decrypt
-   * @param fields - The specific fields to encrypt
+   * @param fieldsToDecrypt - The specific fields to encrypt
+   * @param symmetricKey - The serialized symmetric key to use for decryption
+   * @param initVector - The init vector used to encrypt the fields
+   * @param recursivelyDecryptObjects - If true, will recursively decrypt sub-objects
    */
-  public async decryptSpecifiedFields(
-    obj: any,
-    symKeyRaw: string,
+  public async decryptSpecifiedFields<T>(
+    obj: T,
+    symmetricKey: string,
     initVector: string,
-    fields: string[],
-  ) {
-    const symKey = await this.importSymmetricKey(symKeyRaw)
-    for (const field of fields) {
-      obj[field] = await this.decryptWithSymmetricKeyRaw(symKey, obj[field], initVector)
+    fieldsToDecrypt: string[],
+    recursivelyDecryptObjects = true,
+    currentlyBelowTopLevel = false,
+  ): Promise<T> {
+    // We need to make a deep copy of the object so we don't mutate the original
+    obj = JSON.parse(JSON.stringify(obj))
+
+    if (!symmetricKey) throw new Error('symmetricKey is required to call decryptSpecifiedFields')
+    if (!initVector) throw new Error('initVector is required to call decryptSpecifiedFields')
+
+    const symKey = await this.importSymmetricKey(symmetricKey)
+
+    const fieldsToProcess = currentlyBelowTopLevel ? Object.keys(obj) : fieldsToDecrypt
+
+    for (const field of fieldsToProcess) {
+      if (!obj[field]) continue // Don't try to decrypt falsy fields
+
+      try {
+        if (typeof obj[field] === 'object' && recursivelyDecryptObjects) {
+          obj[field] = await this.decryptSpecifiedFields(
+            obj[field],
+            symmetricKey,
+            initVector,
+            fieldsToDecrypt,
+            recursivelyDecryptObjects,
+            true,
+          )
+        } else if (typeof obj[field] === 'string') {
+          obj[field] = await this.decryptWithSymmetricKeyRaw(symKey, obj[field], initVector)
+        }
+      } catch (err) {
+        console.warn('Error decrypting field. Continuing to other fields.', field, err.message)
+      }
     }
     return obj
   }

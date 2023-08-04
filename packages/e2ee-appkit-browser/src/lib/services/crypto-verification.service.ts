@@ -1,5 +1,4 @@
 import { KeypairAlgorithm } from '@cyphercider/e2ee-appkit-shared-models'
-import { ulid } from 'ulid'
 import { CryptoService } from './crypto.service'
 
 /**
