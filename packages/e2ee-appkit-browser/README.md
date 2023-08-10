@@ -105,12 +105,14 @@ const decryptedText = await cryptoService.decryptTextWithPassword(
 
 ## Key storage via `session-keystore`
 
+The param optionalHoursUntilExpiry is the number of hours until the key expires.  The default setting is 24 hours.
+
 ```ts
 // Set user keys
-cryptoService.setPublicEncryptionKey(pubEncrypting)
-cryptoService.setPrivateEncryptionKey(privEncrypting)
-cryptoService.setPublicSigningKey(pubSigning)
-cryptoService.setPrivateSigningKey(privSigning)
+cryptoService.setPublicEncryptionKey(pubEncrypting, optionalHoursUntilExpiry)
+cryptoService.setPrivateEncryptionKey(privEncrypting, optionalHoursUntilExpiry)
+cryptoService.setPublicSigningKey(pubSigning, optionalHoursUntilExpiry)
+cryptoService.setPrivateSigningKey(privSigning, optionalHoursUntilExpiry)
 
 // Get user keys
 const pubEncr = cryptoService.getPublicEncryptionKey()

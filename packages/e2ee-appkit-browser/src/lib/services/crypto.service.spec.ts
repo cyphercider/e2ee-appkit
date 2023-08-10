@@ -2,6 +2,10 @@ import { ulid } from 'ulid'
 import { CryptoService } from './crypto.service'
 import { KeypairAlgorithm } from '@cyphercider/e2ee-appkit-shared-models'
 
+async function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 describe('crypto service', () => {
   let cryptoService: CryptoService
   beforeEach(() => {
@@ -241,5 +245,29 @@ describe('crypto service', () => {
     expect(six).toBeFalsy()
     expect(seven).toBeFalsy()
     expect(eight).toBeFalsy()
+  })
+
+  it('expiration time should behave correctly', async () => {
+    const expirationTimeMs = 30
+    const expirationTimeHours = expirationTimeMs / 1000 / 60 / 60
+
+    cryptoService.setPrivateEncryptionKey('private encrypting', expirationTimeHours)
+    cryptoService.setPublicEncryptionKey('public encrypting', expirationTimeHours)
+    cryptoService.setPrivateSigningKey('private signing', expirationTimeHours)
+    cryptoService.setPublicSigningKey('public signing', expirationTimeHours)
+
+    expect(cryptoService.allKeysArePresent).toBeTruthy()
+    expect(cryptoService.getPrivateEncryptionKey()).toBeTruthy()
+    expect(cryptoService.getPublicEncryptionKey()).toBeTruthy()
+    expect(cryptoService.getPrivateSigningKey()).toBeTruthy()
+    expect(cryptoService.getPublicSigningKey()).toBeTruthy()
+
+    await sleep(expirationTimeMs + 5)
+
+    expect(cryptoService.allKeysArePresent).toBeFalsy()
+    expect(cryptoService.getPrivateEncryptionKey()).toBeFalsy()
+    expect(cryptoService.getPublicEncryptionKey()).toBeFalsy()
+    expect(cryptoService.getPrivateSigningKey()).toBeFalsy()
+    expect(cryptoService.getPublicSigningKey()).toBeFalsy()
   })
 })
