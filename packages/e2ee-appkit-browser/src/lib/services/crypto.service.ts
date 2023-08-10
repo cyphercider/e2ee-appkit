@@ -297,31 +297,77 @@ export class CryptoService {
     return obj
   }
 
+  private getMsUntilExpiration(hoursUntilExpiration: number) {
+    // 1 hour = 60 minutes = 60 * 60 seconds = 60 * 60 * 1000 milliseconds
+    if (!hoursUntilExpiration) {
+      hoursUntilExpiration = 24
+    }
+
+    return Date.now() + hoursUntilExpiration * 60 * 60 * 1000
+  }
+
   /**
    * ****************** Getters and Setters ********************
    */
 
-  public setPrivateEncryptionKey(privateKey: string) {
-    this.keyStore.set(KeyIndexes.private_encryption_key, privateKey)
+  /**
+   * Set the private key used for encryption
+   * @param privateKey - The private key to set
+   * @param hoursUntilExpiration - The number of hours until the key expires
+   */
+  public setPrivateEncryptionKey(privateKey: string, hoursUntilExpiration?: number) {
+    this.keyStore.set(
+      KeyIndexes.private_encryption_key,
+      privateKey,
+      this.getMsUntilExpiration(hoursUntilExpiration),
+    )
   }
 
   public getPrivateEncryptionKey(): string | null {
     return this.keyStore.get(KeyIndexes.private_encryption_key)
   }
 
-  public setPrivateSigningKey(privateKey: string) {
-    this.keyStore.set(KeyIndexes.private_signing_key, privateKey)
+  /**
+   * Set the private key used for signing
+   * @param privateKey - The private key to set
+   * @param hoursUntilExpiration - The number of hours until the key expires
+   */
+  public setPrivateSigningKey(privateKey: string, hoursUntilExpiration?: number) {
+    this.keyStore.set(
+      KeyIndexes.private_signing_key,
+      privateKey,
+      this.getMsUntilExpiration(hoursUntilExpiration),
+    )
   }
 
   public getPrivateSigningKey(): string | null {
     return this.keyStore.get(KeyIndexes.private_signing_key)
   }
 
-  public setPublicEncryptionKey(publicKey: string) {
-    this.keyStore.set(KeyIndexes.public_encryption_key, publicKey)
+  /**
+   * Set the public key used for encryption
+   * @param publicKey - The public key to set
+   * @param hoursUntilExpiration - The number of hours until the key expires
+   */
+  public setPublicEncryptionKey(publicKey: string, hoursUntilExpiration?: number) {
+    this.keyStore.set(
+      KeyIndexes.public_encryption_key,
+      publicKey,
+      this.getMsUntilExpiration(hoursUntilExpiration),
+    )
   }
-  public setPublicSigningKey(publicKey: string) {
-    this.keyStore.set(KeyIndexes.public_signing_key, publicKey)
+
+  /**
+   * Set the public key used for signing
+   * @param publicKey - The public key to set
+   * @param hoursUntilExpiration - The number of hours until the key expires
+   */
+  public setPublicSigningKey(publicKey: string, hoursUntilExpiration?: number) {
+    this.keyStore.set(
+      KeyIndexes.public_signing_key,
+      publicKey,
+      this.getMsUntilExpiration(hoursUntilExpiration),
+    )
   }
 
   public getPublicEncryptionKey(): string | null {

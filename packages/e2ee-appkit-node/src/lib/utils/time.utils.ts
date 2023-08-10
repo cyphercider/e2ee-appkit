@@ -11,4 +11,8 @@ export class TimeUtils {
     const msPerMinute = 1000 * 60
     return diff / msPerMinute
   }
+
+  static async sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
 }
