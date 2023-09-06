@@ -18,6 +18,9 @@ import { Buffer } from 'buffer'
 import { ulid } from 'ulid'
 import SessionKeystore from 'session-keystore'
 import { KeyPair, KeypairAlgorithm, SignatureResult } from '@cyphercider/e2ee-appkit-shared-models'
+import { TimeUtils } from '../utils/time.utils'
+import { IKeystore } from '../models/keystore.interface'
+import { LocalStorageKeystore } from '../local-keystore/local-storage-keystore'
 
 export enum KeyIndexes {
   private_signing_key = 'private_signing_key',
@@ -26,8 +29,24 @@ export enum KeyIndexes {
   public_signing_key = 'public_signing_key',
 }
 
+export enum KeyStoreType {
+  LocalStorage = 'LocalStorage',
+  SecureSessionStorage = 'SecureSessionStorage',
+}
+
 export class CryptoService {
-  keyStore = new SessionKeystore()
+  //   keyStore = new SessionKeystore()
+  keyStore: IKeystore
+
+  constructor(keyStoreType: KeyStoreType = KeyStoreType.SecureSessionStorage) {
+    if (keyStoreType === KeyStoreType.LocalStorage) {
+      this.keyStore = new LocalStorageKeystore()
+    } else if (keyStoreType === KeyStoreType.SecureSessionStorage) {
+      this.keyStore = new SessionKeystore()
+    } else {
+      throw new Error(`Unknown keystore type: ${keyStoreType}`)
+    }
+  }
 
   /**
    * Clear all encryption keypairs from browser storage - e.g. on logout
@@ -297,15 +316,6 @@ export class CryptoService {
     return obj
   }
 
-  private getMsUntilExpiration(hoursUntilExpiration: number) {
-    // 1 hour = 60 minutes = 60 * 60 seconds = 60 * 60 * 1000 milliseconds
-    if (!hoursUntilExpiration) {
-      hoursUntilExpiration = 24
-    }
-
-    return Date.now() + hoursUntilExpiration * 60 * 60 * 1000
-  }
-
   /**
    * ****************** Getters and Setters ********************
    */
@@ -319,7 +329,7 @@ export class CryptoService {
     this.keyStore.set(
       KeyIndexes.private_encryption_key,
       privateKey,
-      this.getMsUntilExpiration(hoursUntilExpiration),
+      TimeUtils.getExpiresAtFromHoursFromNow(hoursUntilExpiration),
     )
   }
 
@@ -336,7 +346,7 @@ export class CryptoService {
     this.keyStore.set(
       KeyIndexes.private_signing_key,
       privateKey,
-      this.getMsUntilExpiration(hoursUntilExpiration),
+      TimeUtils.getExpiresAtFromHoursFromNow(hoursUntilExpiration),
     )
   }
 
@@ -353,7 +363,7 @@ export class CryptoService {
     this.keyStore.set(
       KeyIndexes.public_encryption_key,
       publicKey,
-      this.getMsUntilExpiration(hoursUntilExpiration),
+      TimeUtils.getExpiresAtFromHoursFromNow(hoursUntilExpiration),
     )
   }
 
@@ -366,7 +376,7 @@ export class CryptoService {
     this.keyStore.set(
       KeyIndexes.public_signing_key,
       publicKey,
-      this.getMsUntilExpiration(hoursUntilExpiration),
+      TimeUtils.getExpiresAtFromHoursFromNow(hoursUntilExpiration),
     )
   }
 
