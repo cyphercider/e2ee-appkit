@@ -310,7 +310,7 @@ export class CryptoService {
           obj[field] = await this.decryptWithSymmetricKeyRaw(symKey, obj[field], initVector)
         }
       } catch (err) {
-        console.warn('Error decrypting field. Continuing to other fields.', field, err.message)
+        throw new Error(`Error decrypting field ${field}. Error: ${err.message}`)
       }
     }
     return obj
