@@ -21,6 +21,6 @@ For usage information, see readmes:
 ## Publish process
 
 1. run `pnpm run build`
-2. CD into each affected repo and run `pnpm publish`
+2. CD into each affected repo DIST FOLDER and run `pnpm publish`
 
 
