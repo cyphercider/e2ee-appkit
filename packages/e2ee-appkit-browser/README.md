@@ -179,6 +179,9 @@ userAuthService.currentUser
 // Get session token.  Returns token in local storage `session_token`.
 const token = userAuthService.getSessionToken()
 
+// Get refresh token. Returns token in local storage `refresh_token`.  You can manage the refresh token in your app.
+const refreshToken = userAuthService.getRefreshToken()
+
 // Get session token payload.  Gets token from storage, decodes, and returns.
 const payload = userAuthService.getSessionTokenPayload()
 

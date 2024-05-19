@@ -52,7 +52,9 @@ describe('test user authn service', () => {
     }).rejects.toThrow(Error) // should throw since token is not present
 
     userAuthnService['getChallengeFromServer'] = jest.fn().mockResolvedValue(testChallengeResponse)
-    userAuthnService['submitChallengeToServer'] = jest.fn().mockResolvedValue(testUserJwt)
+    userAuthnService['submitChallengeToServer'] = jest
+      .fn()
+      .mockResolvedValue({ token: testUserJwt, refreshToken: testUserRefreshToken })
     userAuthnService['signupUserOnServer'] = jest.fn().mockResolvedValue({})
 
     expect(userAuthnService.isLoggedIn).toBeFalsy()
@@ -65,6 +67,9 @@ describe('test user authn service', () => {
 
     const decodedToken = userAuthnService.getSessionTokenPayload()
     expect(decodedToken.sub).toEqual('1234567890')
+
+    const decodedRefreshToken = userAuthnService.getRefreshTokenPayload()
+    expect(decodedRefreshToken.sub).toEqual('1234567890')
   })
 
   it('should call signup on server', async () => {
@@ -146,6 +151,9 @@ describe('test user authn service', () => {
 
 const testUserJwt =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c' // sub: 1234567890
+
+const testUserRefreshToken =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwicmVmcmVzaFRva2VuIjoiMTIzNDU2Nzg5MCJ9.1JfKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c' // sub: 1234567890
 
 const testChallengeResponse: ServerChallengeResponse = {
   challengeText: 'CHALLENGETEXT-1677856484758',

@@ -20,7 +20,7 @@ For usage information, see readmes:
 
 ## Publish process
 
-1. run `npm run build`
-2. CD into each affected repo and run `npm publish`
+1. run `pnpm run build`
+2. CD into each affected repo DIST FOLDER and run `pnpm publish`
 
 
