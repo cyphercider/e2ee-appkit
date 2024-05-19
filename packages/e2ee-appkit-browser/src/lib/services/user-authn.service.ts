@@ -76,7 +76,7 @@ export class UserAuthenticationService {
     return window.localStorage.getItem('session_token')
   }
 
-  private getRefreshToken() {
+  public getRefreshToken() {
     return window.localStorage.getItem('refresh_token')
   }
 
@@ -95,7 +95,7 @@ export class UserAuthenticationService {
     additionalPayloadFields?: Record<string, string>,
     alternateUsername?: string,
     alternatePassword?: string,
-  ): Promise<ServerChallengeResponse> {
+  ): Promise<FreshTokensResponse> {
     const challengeResponse = await this.getChallengeFromServer(username)
 
     this.cryptoService.setPublicEncryptionKey(challengeResponse.publicEncryptionKey)
@@ -172,14 +172,14 @@ export class UserAuthenticationService {
       additionalPayloadFields,
     }
 
-    const res = await this.submitChallengeToServer(submission)
+    const freshTokens = await this.submitChallengeToServer(submission)
 
-    this.setSessionToken(res.token)
-    this.setRefreshToken(res.refreshToken)
+    this.setSessionToken(freshTokens.token)
+    this.setRefreshToken(freshTokens.refreshToken)
     this.currentUser = { sub: username, ...this.getSessionTokenPayload() }
     this._loggedIn = true
 
-    return challengeResponse
+    return freshTokens
   }
 
   /**
