@@ -3,7 +3,6 @@ import {
   KeyPair,
   KeypairAlgorithm,
   LoginRequestInterface,
-  ServerChallengeResponse,
   SignedServerChallengeResponse,
   SignupInterface,
   SubmitChallengeInterface,
@@ -195,7 +194,7 @@ export class UserAuthenticationService {
     additionalPayloadFields?: Record<string, string>,
     encryptingKeypair?: KeyPair,
     signingKeyPair?: KeyPair,
-  ): Promise<ServerChallengeResponse> {
+  ): Promise<FreshTokensResponse> {
     if (!encryptingKeypair) {
       encryptingKeypair = await this.cryptoService.generateKeyPair(KeypairAlgorithm.Encrypting)
     }
