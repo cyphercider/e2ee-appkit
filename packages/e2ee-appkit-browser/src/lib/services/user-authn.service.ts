@@ -1,4 +1,5 @@
 import {
+  FreshTokensResponse,
   KeyPair,
   KeypairAlgorithm,
   LoginRequestInterface,
@@ -62,11 +63,21 @@ export class UserAuthenticationService {
     return decodeJwt(token) as TokenPayload
   }
 
+  public getRefreshTokenPayload(): TokenPayload {
+    const refreshToken = this.getRefreshToken()
+    if (!refreshToken) throw new Error('Refresh token is falsy - cannot get decoded token')
+    return decodeJwt(refreshToken) as TokenPayload
+  }
+
   /**
    * Get the session token (JWT) from local storage
    */
   public getSessionToken() {
     return window.localStorage.getItem('session_token')
+  }
+
+  private getRefreshToken() {
+    return window.localStorage.getItem('refresh_token')
   }
 
   /**
@@ -163,7 +174,8 @@ export class UserAuthenticationService {
 
     const res = await this.submitChallengeToServer(submission)
 
-    this.setSessionToken(res)
+    this.setSessionToken(res.token)
+    this.setRefreshToken(res.refreshToken)
     this.currentUser = { sub: username, ...this.getSessionTokenPayload() }
     this._loggedIn = true
 
@@ -288,6 +300,10 @@ export class UserAuthenticationService {
     window.localStorage.setItem('session_token', token)
   }
 
+  private setRefreshToken(refreshToken: string) {
+    window.localStorage.setItem('refresh_token', refreshToken)
+  }
+
   private async signupUserOnServer(signupUser: SignupInterface): Promise<UserInterface> {
     const res = await axios.post<UserInterface>(
       `${this.baseUri}${this.configService.signupRoute}`,
@@ -312,9 +328,11 @@ export class UserAuthenticationService {
   }
 
   /**
-   * Part 2 of the login process - submit the signed challenge to the server.  If successful, the server should respond with a new user token (JWT)
+   * Part 2 of the login process - submit the signed challenge to the server.  If successful, the server should respond with a new user token (JWT) and refresh token.
    */
-  private async submitChallengeToServer(submission: SubmitChallengeInterface): Promise<string> {
+  private async submitChallengeToServer(
+    submission: SubmitChallengeInterface,
+  ): Promise<FreshTokensResponse> {
     const res = await axios.post(
       `${this.baseUri}${this.configService.challengeSubmitRoute}`,
       submission,

@@ -71,8 +71,9 @@ async function submitChallengeWrapped(submit: SubmitChallengeInterface): Promise
   )
 
   // replace this with your own jwt signing service or library
-  const jwt = jwtService.sign(payload)
-  return jwt
+  const token = jwtService.sign(payload)
+  const refreshToken = jwtService.sign(payload, { expiresIn: '30d' })
+  return { token, refreshToken }
 }
 ```
 
